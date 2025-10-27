@@ -1,0 +1,42 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+*.pyc
+
+# Env
+.env
+
+# Node
+node_modules/
+
+# VSCode
+.vscode/
+
+# macOS
+.DS_Store
+
+# Pytest
+.pytest_cache/
+
+# Logs
+*.log
+
+# Build
+build/
+dist/
+
+# IDE
+*.iml
+.idea/
+
+# Coverage
+htmlcov/
+coverage.xml
+
+# Others
+*.egg-info/
+.eggs/
