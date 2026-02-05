@@ -50,3 +50,43 @@ staticfiles/
 .cache/
 coverage/
 *.pid
+.coverage
+.pytest_cache/
+
+# Backend util/test scripts (não necessários para execução)
+backend/check_*.py
+backend/test_*.py
+backend/verify_*.py
+backend/verificar_*.py
+backend/diagn*.py
+backend/reorganizar_*.py
+backend/corrigir_*.py
+backend/criar_*.py
+backend/create_*.py
+backend/sync_*.py
+backend/quick_*.py
+backend/status_final.py
+backend/detailed_response.json
+backend/media/
+backend/*.pyc
+
+# Bundle files
+*.bundle
+feature-aprendiz-backend-enrollments.bundle
+
+# Frontend build output
+frontend/dist/
+frontend/build/
+frontend/.env.local
+frontend/node_modules/
+
+# IDE
+*.code-workspace
+.vscode/settings.json
+.vscode/launch.json
+
+# Temporary files
+*.tmp
+*.temp
+*.swamp
+*~.
