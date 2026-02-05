@@ -1,44 +1,33 @@
-# Sistema de Login Django com DRF e SimpleJWT
+# Sistema de Onboarding com Django REST Framework
 
-Este projeto implementa um sistema de autenticação e autorização baseado em papéis utilizando Django REST Framework (DRF) e SimpleJWT, com PostgreSQL como banco de dados.
+Este projeto implementa um sistema de autenticação e autorização baseado em papéis utilizando Django REST Framework e SimpleJWT, além de funcionalidades para gerenciamento de trilhas de onboarding, módulos, atividades e conteúdos.
 
-## Funcionalidades
+## Estrutura do Projeto
 
-*   **Autenticação de Usuário:** Login com e-mail e senha, gerando tokens JWT (Access e Refresh).
-*   **Autorização Baseada em Papéis:** Os tokens JWT incluem o papel do usuário, permitindo controle de acesso a rotas protegidas.
-*   **Modelos de Usuário Personalizados:** O modelo de usuário foi estendido para incluir um campo `role` (papel).
-*   **Gerenciamento de Usuários por Administrador:** Um administrador pode registrar novos usuários com papéis específicos.
-*   **PostgreSQL:** Configurado como o banco de dados principal.
-
-## Papéis de Usuário
-
-Os seguintes papéis são definidos no sistema:
-
-*   **Aprendiz**
-*   **Mentor**
-*   **Gestor**
-*   **Autor de conteúdo**
-*   **Administrador**
+- `onboarding/`: Módulo de configurações do projeto.
+- `users/`: Aplicativo Django para gerenciamento de usuários, autenticação e autorização.
+- `onboarding_app/`: Aplicativo Django para gerenciamento de trilhas, módulos, atividades, conteúdos e matrículas.
 
 ## Configuração do Ambiente
 
-### Pré-requisitos
-
-Certifique-se de ter o Python 3.11 e o PostgreSQL instalados em seu sistema.
-
-### Passos para Configuração
-
-1.  **Clone o repositório (se aplicável) ou crie o projeto Django:**
+1.  **Clone o repositório (ou descompacte o arquivo `mysite_updated.zip`):**
 
     ```bash
-    django-admin startproject mysite
-    cd mysite
+    # Se for um repositório git
+    git clone <URL_DO_REPOSITORIO>
+    cd <NOME_DO_PROJETO>
+    # Se for o arquivo zip
+    unzip onboarding_project_refactored.zip
+    cd onboarding_project
     ```
 
 2.  **Crie e ative um ambiente virtual:**
 
     ```bash
-    python3.11 -m venv venv
+    python -m venv venv
+    # No Windows
+    .\venv\Scripts\activate
+    # No Linux/macOS
     source venv/bin/activate
     ```
 
@@ -50,345 +39,109 @@ Certifique-se de ter o Python 3.11 e o PostgreSQL instalados em seu sistema.
 
 4.  **Configuração do PostgreSQL:**
 
-    Certifique-se de que o serviço PostgreSQL esteja em execução. Crie o banco de dados e o usuário conforme as informações fornecidas:
+    Certifique-se de ter o PostgreSQL instalado e rodando. Crie um banco de dados chamado `onboarding` e um usuário `postgres` com a senha `admin` (ou ajuste as configurações em `onboarding/settings.py`).
 
+    **No Windows:**
+    *   Inicie o serviço PostgreSQL via Gerenciador de Serviços ou `net start postgresql-x64-XX`.
+    *   Se necessário, use `psql` ou pgAdmin para criar o banco de dados `onboarding` e o usuário `postgres` com a senha `admin`.
+
+    **No Linux/WSL:**
     ```bash
     sudo service postgresql start
     sudo -u postgres psql -c "CREATE DATABASE onboarding;"
     sudo -u postgres psql -c "CREATE USER postgres WITH PASSWORD 'admin';"
-    sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'admin';" # Garante que a senha está definida
+    sudo -u postgres psql -c "ALTER ROLE postgres SET client_encoding TO 'utf8';"
+    sudo -u postgres psql -c "ALTER ROLE postgres SET default_transaction_isolation TO 'read committed';"
+    sudo -u postgres psql -c "ALTER ROLE postgres SET timezone TO 'UTC';"
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE onboarding TO postgres;"
     ```
 
-    Edite o arquivo `pg_hba.conf` (geralmente em `/etc/postgresql/14/main/pg_hba.conf`) para permitir autenticação `md5` para conexões locais. Adicione as seguintes linhas (ou modifique as existentes):
-
-    ```
-    host    all             all             127.0.0.1/32            md5
-    host    all             all             ::1/128                 md5
-    ```
-
-    Após a edição, reinicie o PostgreSQL:
+5.  **Aplique as migrações do banco de dados:**
 
     ```bash
-    sudo service postgresql restart
+    # Exclua os arquivos de migração antigos (exceto __init__.py) em users/migrations/ e onboarding_app/migrations/
+    # Em seguida, execute na ordem correta:
+    python manage.py makemigrations users
+    python manage.py makemigrations onboarding_app
+    python manage.py migrate
     ```
 
-5.  **Configuração do Django `settings.py`:**
+6.  **Crie os perfis iniciais (Administrador, Gestor, Autor de Conteúdo, Aprendiz, Mentor):**
 
-    No arquivo `mysite/settings.py`, configure o banco de dados e adicione os aplicativos `rest_framework`, `rest_framework_simplejwt` e `users` em `INSTALLED_APPS`. Adicione também as configurações do SimpleJWT e o modelo de usuário personalizado.
+    Você pode criar esses perfis manualmente através do painel de administração do Django (`http://127.0.0.1:8000/admin/`) na seção `Users` -> `Perfis`.
 
-    ```python
-    # mysite/settings.py
+    *   `Nome: Administrador`, `Descrição: Usuário com acesso total.`
+    *   `Nome: Gestor`, `Descrição: Usuário que pode gerenciar trilhas e matricular usuários.`
+    *   `Nome: Autor de Conteúdo`, `Descrição: Usuário que pode criar e editar trilhas e conteúdos.`
+    *   `Nome: Aprendiz`, `Descrição: Usuário padrão.`
+    *   `Nome: Mentor`, `Descrição: Usuário que pode orientar aprendizes.`
 
-    INSTALLED_APPS = [
-        # ...
-        'rest_framework',
-        'rest_framework_simplejwt',
-        'users',
-    ]
+7.  **Crie um superusuário administrador:**
 
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME': 'onboarding',
-            'USER': 'postgres',
-            'PASSWORD': 'admin',
-            'HOST': 'localhost',
-            'PORT': '5432',
+    ```bash
+    python manage.py create_superuser_with_role --email admin@example.com --username admin --password admin --role Administrador
+    ```
+
+8.  **Inicie o servidor de desenvolvimento:**
+
+    ```bash
+    python manage.py runserver
+    ```
+
+## Endpoints da API
+
+Todos os endpoints estão sob `/api/`.
+
+### Autenticação e Usuários
+
+*   **`GET, PUT, PATCH, DELETE /api/users/<id>/`**: Visualiza, atualiza ou exclui um usuário específico.
+    *   **Permissão:** Apenas o próprio usuário ou um `Administrador` pode acessar/modificar.
+    *   **PUT/PATCH Corpo da Requisição (JSON):** `{"email": "novo.email@example.com", ...}`
+    *   **Cabeçalho:** `Authorization: Bearer <SEU_ACCESS_TOKEN>`
+
+*   **`POST /api/auth/login/`**: Realiza o login e retorna tokens JWT (`access` e `refresh`).
+
+*   **`POST /api/auth/login/`**: Realiza o login e retorna tokens JWT (`access` e `refresh`).
+    *   **Corpo da Requisição (JSON):** `{"email": "seu_email", "password": "sua_senha"}`
+*   **`POST /api/auth/register/`**: Registra um novo usuário. O papel padrão é `Aprendiz`.
+    *   **Corpo da Requisição (JSON):** `{"username": "seu_username", "email": "seu_email", "password": "sua_senha"}`
+*   **`POST /api/admin/register/`**: Registra um novo usuário com um papel específico (apenas para `Administrador`).
+    *   **Corpo da Requisição (JSON):** `{"username": "novo_usuario", "email": "email@example.com", "password": "senha", "perfil_nome": "Gestor"}`
+    *   **Cabeçalho:** `Authorization: Bearer <TOKEN_ADMINISTRADOR>`
+*   **`GET /api/users/dashboard/`**: Retorna o painel de perfil do usuário logado, incluindo informações do usuário e a lista de funcionalidades disponíveis dinamicamente, baseada no seu papel (role).
+    *   **Cabeçalho:** `Authorization: Bearer <SEU_ACCESS_TOKEN>`
+*   **`GET /api/protected/`**: Rota de exemplo protegida. Apenas usuários com papel `Administrador` ou `Gestor` podem acessar.
+    *   **Cabeçalho:** `Authorization: Bearer <SEU_ACCESS_TOKEN>`
+
+### Gerenciamento de Trilhas
+
+*   **`POST /api/trilhas/create/`**: Cria uma nova trilha. Requer papéis `Administrador`, `Gestor` ou `Autor de Conteúdo`.
+    *   **Corpo da Requisição (JSON):** Exemplo:
+        ```json
+        {
+            "versao": "1.0",
+            "status": "Rascunho",
+            "titulo": "Trilha de Onboarding para Desenvolvedores",
+            "descricao": "Trilha completa para novos desenvolvedores.",
+            "objetivos": "Aprender as ferramentas e processos da empresa.",
+            "publico_alvo": "Desenvolvedores Júnior",
+            "prazo_recomendado": 30,
+            "is_template": false
         }
-    }
-
-    AUTH_USER_MODEL = 'users.User'
-
-    REST_FRAMEWORK = {
-        'DEFAULT_AUTHENTICATION_CLASSES': (
-            'rest_framework_simplejwt.authentication.JWTAuthentication',
-        )
-    }
-
-    from datetime import timedelta
-
-    SIMPLE_JWT = {
-        'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
-        'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-        'ROTATE_REFRESH_TOKENS': False,
-        'BLACKLIST_AFTER_ROTATION': False,
-        'UPDATE_LAST_LOGIN': False,
-
-        'ALGORITHM': 'HS256',
-        'SIGNING_KEY': SECRET_KEY,
-        'VERIFYING_KEY': None,
-        'AUDIENCE': None,
-        'ISSUER': None,
-        'JWK_URL': None,
-        'LEEWAY': 0,
-
-        'AUTH_HEADER_TYPES': ('Bearer',),
-        'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
-        'USER_ID_FIELD': 'id',
-        'USER_ID_CLAIM': 'user_id',
-        'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
-
-        'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
-        'TOKEN_TYPE_CLAIM': 'token_type',
-        'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
-
-        'JTI_CLAIM': 'jti',
-
-        'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
-        'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
-        'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
-    }
-    ```
-
-6.  **Crie o aplicativo `users` e defina o modelo de usuário:**
-
-    ```bash
-    python3.11 manage.py startapp users
-    ```
-
-    No arquivo `users/models.py`, defina o modelo `User`:
-
-    ```python
-    # users/models.py
-
-    from django.db import models
-    from django.contrib.auth.models import AbstractUser
-
-    class User(AbstractUser):
-        ROLE_CHOICES = (
-            ("Aprendiz", "Aprendiz"),
-            ("Mentor", "Mentor"),
-            ("Gestor", "Gestor"),
-            ("Autor de conteúdo", "Autor de conteúdo"),
-            ("Administrador", "Administrador"),
-        )
-        email = models.EmailField(unique=True)
-        role = models.CharField(max_length=50, choices=ROLE_CHOICES, default="Aprendiz")
-
-        USERNAME_FIELD = "email"
-        REQUIRED_FIELDS = ["username", "role"]
-
-        def __str__(self):
-            return self.email
-    ```
-
-7.  **Crie e aplique as migrações:**
-
-    ```bash
-    python3.11 manage.py makemigrations users
-    python3.11 manage.py migrate
-    ```
-
-8.  **Crie o superusuário administrador:**
-
-    ```bash
-    python3.11 manage.py create_superuser_with_role --email admin@example.com --username admin --password admin --role Administrador
-    ```
-
-9.  **Defina Serializers, Views e URLs para autenticação e registro:**
-
-    Crie `users/serializers.py`:
-
-    ```python
-    # users/serializers.py
-
-    from rest_framework import serializers
-    from .models import User
-
-    class UserSerializer(serializers.ModelSerializer):
-        class Meta:
-            model = User
-            fields = ("id", "username", "email", "role", "password")
-            extra_kwargs = {"password": {"write_only": True}}
-
-        def create(self, validated_data):
-            user = User.objects.create_user(
-                email=validated_data["email"],
-                username=validated_data["username"],
-                password=validated_data["password"],
-                role=validated_data.get("role", "Aprendiz")
-            )
-            return user
-
-    class AdminUserRegisterSerializer(serializers.ModelSerializer):
-        class Meta:
-            model = User
-            fields = ("id", "username", "email", "role", "password")
-            extra_kwargs = {"password": {"write_only": True}}
-
-        def create(self, validated_data):
-            user = User.objects.create_user(
-                email=validated_data["email"],
-                username=validated_data["username"],
-                password=validated_data["password"],
-                role=validated_data.get("role", "Aprendiz")
-            )
-            return user
-    ```
-
-    Crie `users/permissions.py`:
-
-    ```python
-    # users/permissions.py
-
-    from rest_framework.permissions import BasePermission
-
-    class IsRole(BasePermission):
-        def has_permission(self, request, view):
-            if not request.user or not request.user.is_authenticated:
-                return False
-
-            required_roles = getattr(view, 'required_roles', None)
-
-            if required_roles is None:
-                return True
-
-            return request.user.role in required_roles
-    ```
-
-    No arquivo `users/views.py`:
-
-    ```python
-    # users/views.py
-
-    from rest_framework_simplejwt.views import TokenObtainPairView
-    from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-    from rest_framework import generics
-    from rest_framework.permissions import IsAuthenticated
-    from rest_framework.response import Response
-    from rest_framework.views import APIView
-    from .serializers import UserSerializer
-    from .permissions import IsRole
-
-    class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-        @classmethod
-        def get_token(cls, user):
-            token = super().get_token(user)
-            token["role"] = user.role
-            return token
-
-    class UserLoginView(TokenObtainPairView):
-        serializer_class = CustomTokenObtainPairSerializer
-
-    class UserRegisterView(generics.CreateAPIView):
-        serializer_class = UserSerializer
-
-    class ProtectedView(APIView):
-        permission_classes = [IsAuthenticated, IsRole]
-        required_roles = ["Administrador", "Gestor"]
-
-        def get(self, request):
-            return Response({"message": f"Bem-vindo, {request.user.username}! Você é um {request.user.role}."})
-
-    class AdminUserRegisterView(generics.CreateAPIView):
-        permission_classes = [IsAuthenticated, IsRole]
-        required_roles = ["Administrador"]
-        serializer_class = UserSerializer # Usar UserSerializer para registro
-    ```
-
-    No arquivo `users/urls.py`:
-
-    ```python
-    # users/urls.py
-
-    from django.urls import path
-    from rest_framework_simplejwt.views import TokenRefreshView
-    from .views import UserLoginView, UserRegisterView, ProtectedView, AdminUserRegisterView
-
-    urlpatterns = [
-        path("auth/login/", UserLoginView.as_view(), name="token_obtain_pair"),
-        path("auth/login/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-        path("auth/register/", UserRegisterView.as_view(), name="user_register"),
-        path("protected/", ProtectedView.as_view(), name="protected_view"),
-        path("admin/register/", AdminUserRegisterView.as_view(), name="admin_user_register"),
-    ]
-    ```
-
-    No arquivo `mysite/urls.py`, inclua as URLs do aplicativo `users`:
-
-    ```python
-    # mysite/urls.py
-
-    from django.contrib import admin
-    from django.urls import path, include
-
-    urlpatterns = [
-        path("admin/", admin.site.urls),
-        path("api/", include("users.urls")),
-    ]
-    ```
-
-10. **Comando de gerenciamento personalizado:**
-
-    Crie o diretório `users/management/commands` e o arquivo `users/management/commands/create_superuser_with_role.py`:
-
-    ```python
-    # users/management/commands/create_superuser_with_role.py
-
-    from django.core.management.base import BaseCommand
-    from users.models import User
-
-    class Command(BaseCommand):
-        help = 'Cria um superusuário com um papel específico.'
-
-        def add_arguments(self, parser):
-            parser.add_argument('--email', type=str, required=True, help='O email do superusuário.')
-            parser.add_argument('--username', type=str, required=True, help='O nome de usuário do superusuário.')
-            parser.add_argument('--password', type=str, required=True, help='A senha do superusuário.')
-            parser.add_argument('--role', type=str, default='Administrador', help='O papel do superusuário (padrão: Administrador).')
-
-        def handle(self, *args, **options):
-            email = options['email']
-            username = options['username']
-            password = options['password']
-            role = options['role']
-
-            if not User.objects.filter(email=email).exists():
-                User.objects.create_superuser(email=email, username=username, password=password, role=role)
-                self.stdout.write(self.style.SUCCESS(f'Superusuário {email} com papel {role} criado com sucesso!'))
-            else:
-                self.stdout.write(self.style.WARNING(f'Superusuário com email {email} já existe.'))
-    ```
-
-## Como Testar
-
-1.  **Inicie o servidor Django:**
-
-    ```bash
-    python3.11 manage.py runserver 0.0.0.0:8000
-    ```
-
-2.  **Login do Administrador (exemplo com `curl`):**
-
-    ```bash
-    curl -X POST -H "Content-Type: application/json" -d '{"email": "admin@example.com", "password": "admin"}' http://127.0.0.1:8000/api/auth/login/
-    ```
-
-    Isso retornará um token de acesso e um token de atualização. Copie o `access` token.
-
-3.  **Acessar rota protegida (exemplo com `curl`):**
-
-    ```bash
-    ACCESS_TOKEN="<SEU_ACCESS_TOKEN>"
-    curl -X GET -H "Authorization: Bearer $ACCESS_TOKEN" http://127.0.0.1:8000/api/protected/
-    ```
-
-    Se o login for bem-sucedido e o token for válido, você verá uma mensagem de boas-vindas com o papel do usuário.
-
-4.  **Registrar novo usuário como Administrador (exemplo com `curl`):**
-
-    ```bash
-    ACCESS_TOKEN="<SEU_ACCESS_TOKEN>"
-    curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" -d '{"username": "novo_mentor", "email": "mentor@example.com", "password": "mentorpass", "role": "Mentor"}' http://127.0.0.1:8000/api/admin/register/
-    ```
-
-    Isso criará um novo usuário com o papel de Mentor.
-
-## Próximos Passos
-
-*   Implementar mais funcionalidades para cada papel.
-*   Adicionar testes unitários e de integração mais abrangentes.
-*   Configurar um servidor de produção (Gunicorn, Nginx, etc.).
-*   Implementar recuperação de senha e edição de perfil.
-
+        ```
+    *   **Cabeçalho:** `Authorization: Bearer <TOKEN_AUTORIZADO>`
+*   **`GET /api/trilhas/<id_trilha>/`**: Retorna detalhes de uma trilha específica.
+*   **`PUT /api/trilhas/<id_trilha>/`**: Atualiza uma trilha existente. Requer papéis `Administrador`, `Gestor` ou `Autor de Conteúdo`.
+    *   **Cabeçalho:** `Authorization: Bearer <TOKEN_AUTORIZADO>`
+*   **`DELETE /api/trilhas/<id_trilha>/`**: Exclui uma trilha existente. Requer papéis `Administrador`, `Gestor` ou `Autor de Conteúdo`.
+    *   **Cabeçalho:** `Authorization: Bearer <TOKEN_AUTORIZADO>`
+
+### Gerenciamento de Conteúdos
+
+*   **`POST /api/conteudos/create/`**: Cria um novo conteúdo para uma atividade. Requer papéis `Administrador`, `Gestor` ou `Autor de Conteúdo`.
+    *   **Corpo da Requisição (JSON):** Exemplo:
+        ```json
+        {
+            "id_atividade": 1,  // ID da atividade à qual o conteúdo pertence
+            "tipo": "Texto",    // 
 

@@ -1,0 +1,65 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: trilhas_onboarding_db
+    environment:
+      POSTGRES_DB: onboarding
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - trilhas_network
+
+  # Django Backend
+  backend:
+    build:
+      context: ./backend
+    container_name: trilhas_onboarding_backend
+    command: sh -c "python manage.py migrate && gunicorn main.wsgi:application --bind 0.0.0.0:8000"
+    environment:
+      SECRET_KEY: django-insecure-9y1a^*rs=+q01%vag11%b3xx)@k191q@r8sz^d^oy=u3k$g8++
+      DEBUG: "False"
+      ALLOWED_HOSTS: localhost,127.0.0.1,backend,backend:8000
+      DB_NAME: onboarding
+      DB_USER: postgres
+      DB_PASSWORD: admin
+      DB_HOST: db
+      DB_PORT: 5432
+      CORS_ALLOWED_ORIGINS: http://localhost:8080,http://localhost:5173,http://127.0.0.1:8080,http://127.0.0.1:5173,http://frontend:80
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    networks:
+      - trilhas_network
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+    container_name: trilhas_onboarding_frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - trilhas_network
+
+volumes:
+  postgres_data:
+
+networks:
+  trilhas_network:
+    driver: bridge

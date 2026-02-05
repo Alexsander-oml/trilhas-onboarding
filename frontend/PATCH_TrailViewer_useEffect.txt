@@ -1,0 +1,70 @@
+// Patch para TrailViewer - Linhas 38-74
+// Substitua o useEffect existente por este código
+
+  // Busca real da trilha e dos módulos
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchTrail() {
+      if (!id) return;
+      setIsBootstrapping(true);
+      try {
+        // Tentar buscar versão detalhada primeiro
+        let trailData;
+        try {
+          trailData = await trailService.getDetailedTrailById(Number(id));
+          console.log('📊 Dados DETALHADOS da trilha:', trailData);
+        } catch (detailErr) {
+          console.log('⚠️ Endpoint detalhado não disponível, usando padrão');
+          trailData = await trailService.getTrailById(Number(id));
+          console.log('📊 Dados da trilha recebidos:', trailData);
+        }
+        
+        // Se os módulos não têm materials, tentar extrair do changelog
+        let processedModules = trailData?.modules ?? [];
+        if (processedModules.length > 0 && !processedModules[0]?.materials) {
+          console.log('⚠️ Módulos sem materials, tentando extrair do changelog');
+          if (trailData?.changelog) {
+            try {
+              const changelogData = typeof trailData.changelog === 'string' 
+                ? JSON.parse(trailData.changelog) 
+                : trailData.changelog;
+              console.log('📋 Changelog processado:', changelogData);
+              if (changelogData?.modules) {
+                // Mapear os materiais do changelog para os módulos
+                processedModules = processedModules.map((mod: any, index: number) => {
+                  const changelogModule = changelogData.modules[index];
+                  return {
+                    ...mod,
+                    materials: changelogModule?.materials || []
+                  };
+                });
+                console.log('✅ Módulos processados:', processedModules);
+                console.log('📚 Materials do primeiro módulo:', processedModules[0]?.materials);
+              }
+            } catch (parseErr) {
+              console.error('❌ Erro ao processar changelog:', parseErr);
+            }
+          }
+        }
+        
+        if (!isMounted) return;
+        setTrail(trailData);
+        setModules(processedModules);
+        setCurrentModuleIndex(0);
+        setCurrentMaterialIndex(0);
+      } catch (err) {
+        console.error('❌ Erro ao buscar trilha:', err);
+        if (!isMounted) return;
+        setTrail(undefined);
+        setModules([]);
+      } finally {
+        if (isMounted) setIsBootstrapping(false);
+      }
+    }
+
+    fetchTrail();
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);

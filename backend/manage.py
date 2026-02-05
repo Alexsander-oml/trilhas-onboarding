@@ -6,6 +6,8 @@ import sys
 
 def main():
     """Run administrative tasks."""
+    # The project settings are located in the `main` package (main/settings.py).
+    # Older name `onboarding.settings` caused ModuleNotFoundError when importing.
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'main.settings')
     try:
         from django.core.management import execute_from_command_line

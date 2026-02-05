@@ -1,0 +1,47 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+
+/* Cursor pointer para todos os botões */
+button {
+  cursor: pointer;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root {
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  background-color: #ffffff;
+  color: #0f172a;
+  font-synthesis: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+/* Scoped exception: profile left-nav links should not inherit the global anchor styles
+   Add the `profile-nav` class to nav containers to make their <a> elements use the
+   local palette (gray/black) and a normal font-weight. This selector has higher
+   specificity than the global `a {}` rule and will override it for those navs. */
+.profile-nav a {
+  color: inherit;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.profile-nav a:hover {
+  color: inherit;
+}
