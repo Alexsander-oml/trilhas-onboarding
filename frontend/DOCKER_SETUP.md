@@ -8,7 +8,7 @@
 
 ### 1️⃣ Na raiz do projeto (onde está o docker-compose.yml)
 ```powershell
-docker-compose up --build
+docker compose up --build
 ```
 
 ### 2️⃣ Aguarde a inicialização
@@ -23,12 +23,12 @@ docker-compose up --build
 
 ## Parar os containers
 ```powershell
-docker-compose down
+docker compose down
 ```
 
 ## Remover volumes (limpar banco de dados)
 ```powershell
-docker-compose down -v
+docker compose down -v
 ```
 
 ## Verificar status
@@ -37,7 +37,7 @@ docker ps
 ```
 
 ## Variáveis importantes
-- `VITE_API_BASE_URL`: Automaticamente configurado como `http://backend:8000/api` (serviço do backend)
+- `VITE_API_BASE_URL`: no Docker padrão, pode ficar como `/api` (Nginx faz proxy para o backend)
 - `CORS_ALLOWED_ORIGINS`: Inclui o frontend (http://frontend:80)
 - `DB_HOST`: `db` (nome do serviço PostgreSQL)
 

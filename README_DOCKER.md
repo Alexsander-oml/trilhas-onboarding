@@ -11,7 +11,7 @@ Este documento explica como configurar e rodar todo o projeto (Backend + Fronten
 ### Verificar se está tudo pronto:
 ```powershell
 docker --version
-docker-compose --version
+docker compose version
 ```
 
 ---
@@ -26,20 +26,17 @@ cd seu-repositorio
 
 ### 2️⃣ Configurar variáveis de ambiente
 
-**Backend:**
-```powershell
-cp backend/.env.example backend/.env
-```
-Edite `backend/.env` se necessário (padrões já estão configurados para desenvolvimento)
+O `docker-compose.yml` usa as variáveis do arquivo `.env` na raiz do projeto.
 
-**Frontend:**
 ```powershell
-cp frontend/.env.example frontend/.env
+Copy-Item .env.example .env
 ```
+
+Edite `.env` se necessário (secret key, domínios e credenciais de banco).
 
 ### 3️⃣ Subir os containers
 ```powershell
-docker-compose up --build
+docker compose up --build
 ```
 
 Isso vai:
@@ -62,10 +59,10 @@ Isso vai:
 
 ```powershell
 # Parar containers (mantém dados)
-docker-compose down
+docker compose down
 
 # Parar e remover volumes (limpa banco de dados)
-docker-compose down -v
+docker compose down -v
 
 # Verificar containers rodando
 docker ps
@@ -85,25 +82,25 @@ docker ps
 ### Banco de dados não conecta?
 ```powershell
 # Verificar logs do banco:
-docker-compose logs db
+docker compose logs db
 
 # Remover e recriar volume do banco:
-docker-compose down -v
-docker-compose up --build
+docker compose down -v
+docker compose up --build
 ```
 
 ### Erro no build do frontend/backend?
 ```powershell
 # Rebuild completo:
-docker-compose build --no-cache
-docker-compose up
+docker compose build --no-cache
+docker compose up
 ```
 
 ### Ver logs de um serviço específico:
 ```powershell
-docker-compose logs backend   # Django logs
-docker-compose logs frontend  # Nginx logs
-docker-compose logs db        # PostgreSQL logs
+docker compose logs backend   # Django logs
+docker compose logs frontend  # Nginx logs
+docker compose logs db        # PostgreSQL logs
 ```
 
 ---
@@ -130,14 +127,14 @@ docker-compose logs db        # PostgreSQL logs
 
 ## 🔑 Variáveis Importantes
 
-### Backend (`.env`)
+### Backend (`.env` na raiz)
 - `SECRET_KEY`: Chave secreta do Django (mude em produção!)
 - `DEBUG`: Modo debug (False em produção)
 - `DB_HOST`: Deve ser `db` (nome do serviço Docker)
 - `CORS_ALLOWED_ORIGINS`: URLs permitidas para CORS
 
-### Frontend (`.env`)
-- `VITE_API_BASE_URL`: Aponta para `http://localhost:8000/api` em desenvolvimento ou `http://backend:8000/api` no Docker
+### Frontend
+- No cenário Docker padrão, o frontend usa proxy Nginx para `/api` automaticamente.
 
 ---
 
